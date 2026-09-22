@@ -18,7 +18,14 @@ try{
   const buffer=await fs.readFile(file);await open(buffer,path.basename(file));
   assert.equal(await page.locator('#export').isDisabled(),false,await page.locator('#status').innerText());
   const info=await page.evaluate(()=>window.doremi.inspect());assert.ok(info.pages.every(p=>p.notes.length>0));console.log(path.basename(file),info.pages.reduce((n,p)=>n+p.notes.length,0),'notes');
-  assert.ok(await page.evaluate(async()=>(await window.doremi.createPDF()).length>1000));
+  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#export').click()]);
+  assert.equal(await download.failure(),null);
+  assert.equal(download.suggestedFilename(),path.basename(file).replace(/\.pdf$/i,'')+'_ドレミ付き.pdf');
+  const saved=await fs.readFile(await download.path());
+  const exported=await PDFDocument.load(saved);
+  assert.equal(exported.getPageCount(),info.pages.length);
+  assert.ok(saved.length>buffer.length);
+  await page.waitForFunction(()=>window.doremi.ready());
   const mixed=await PDFDocument.load(buffer);mixed.addPage();await open(Buffer.from(await mixed.save()),'mixed.pdf');
   assert.equal(await page.locator('#export').isDisabled(),true);assert.equal(await page.locator('.note').count(),0);
   await open(buffer,'recovery.pdf');assert.equal(await page.locator('#export').isDisabled(),false);

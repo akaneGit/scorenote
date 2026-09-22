@@ -108,6 +108,11 @@ async function fromFile(file) {
   if (!file) return;
   await openPDF(new Uint8Array(await file.arrayBuffer()), file.name);
 }
+$('export').addEventListener('click',()=>run(async()=>{
+  const bytes=await createPDF();
+  download(bytes,state.name.replace(/\.pdf$/i,'')+'_ドレミ付き.pdf','application/pdf');
+  say('PDFをダウンロードしました。');
+}));
 $('file-input').addEventListener('change', event => { const file = event.target.files[0]; event.target.value = ''; run(() => fromFile(file)); });
 $('drop-zone').addEventListener('keydown', event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); $('file-input').click(); } });
 $('drop-zone').addEventListener('dragover', event => { event.preventDefault(); $('drop-zone').classList.add('dragover'); });
