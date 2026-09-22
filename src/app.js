@@ -17,7 +17,7 @@ let busy=false, blocked=true;
 const say=(text,error=false)=>{ $('status').textContent=text; $('status').classList.toggle('error',error); };
 const noteVisible=n=>!['treble','bass'].includes(state.settings.scope)||n.clef===state.settings.scope;
 const countNotes=()=>state.pages.reduce((n,p)=>n+p.notes.filter(noteVisible).length,0);
-function updateControls(){ $('export').disabled=busy||blocked||!state.pdf||!countNotes(); $('count').textContent=state.pdf?state.pages.length+'ページ · '+countNotes()+'音':'PDFを選んでスタート'; }
+function updateControls(){ $('export').disabled=busy||blocked||!state.pdf||!countNotes(); }
 async function run(task){if(busy)return;busy=true;document.body.classList.add('busy');updateControls();try{await task();}catch(e){console.error(e);say(e.message||'処理できませんでした。',true);}finally{busy=false;document.body.classList.remove('busy');updateControls();}}
 function syncSettings(){ $('chord-layout').value=state.settings.chordLayout; $('font-size').value=state.settings.size;$('size-value').textContent=state.settings.size+' pt';$('scope').value=state.settings.scope;$('octave').checked=state.settings.octave;document.querySelectorAll('.swatch').forEach(e=>{e.classList.toggle('active',e.dataset.color===state.settings.color);e.setAttribute('aria-pressed',String(e.dataset.color===state.settings.color));}); }
 function arrange(){for(const p of state.pages)layoutLabels(p,state.settings,p.canvas);blocked=false;say(countNotes()+'音を自動判定しました。プレビューを確認して保存してください。');renderAnnotations();}

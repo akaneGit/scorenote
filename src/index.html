@@ -11,7 +11,7 @@
 <body>
   <header class="topbar">
     <div class="brand"><img class="brand-mark" src="__SCORENOTE_ICON__" alt="" width="42" height="42"><div><strong>ドレミふり</strong><span class="brand-sub">楽譜に、読みやすい音名を。</span></div></div>
-    <div class="header-actions"><span class="local-badge"><i></i> このPC内で処理</span><button id="export" class="primary" disabled>PDFを保存 <span aria-hidden="true">↓</span></button></div>
+    <div class="header-actions"><button id="export" class="primary" disabled>PDFを保存 <span aria-hidden="true">↓</span></button></div>
   </header>
   <main>
     <aside class="sidebar">
@@ -29,6 +29,7 @@
       </section>
       <section>
         <div class="section-eyebrow">03 <span>見た目を整える</span></div>
+        <label class="field">表示倍率<select id="zoom"><option value="fit">幅に合わせる</option><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option></select></label>
         <label class="field range-label">文字サイズ <output id="size-value">7.5 pt</output><input id="font-size" type="range" min="5" max="16" step="0.5" value="7.5"></label>
         <div class="field color-field"><span>文字の色</span><div class="swatches"><button class="swatch active" data-color="#b34536" style="--swatch:#b34536" aria-label="朱色" aria-pressed="true"></button><button class="swatch" data-color="#24587a" style="--swatch:#24587a" aria-label="青" aria-pressed="false"></button><button class="swatch" data-color="#1f2525" style="--swatch:#1f2525" aria-label="黒" aria-pressed="false"></button></div></div>
         <label class="field">和音の並べ方<select id="chord-layout"><option value="horizontal">横並び</option><option value="vertical">縦並び（高い音が上）</option></select></label>
@@ -38,8 +39,7 @@
 
     </aside>
     <div class="workspace">
-      <div class="workspace-top"><div><span class="eyebrow">SCORE PREVIEW</span><h1 id="document-title">音符のそばに、ドレミを。</h1></div><span class="count-pill" id="count">楽譜を開いてスタート</span></div>
-      <div class="toolbar" aria-label="編集ツール"><div class="tool-group"><label class="zoom-control">表示 <select id="zoom"><option value="fit">幅に合わせる</option><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option></select></label></div></div>
+      <div class="workspace-top"><div><span class="eyebrow">SCORE PREVIEW</span><h1 id="document-title">音符のそばに、ドレミを。</h1></div></div>
       <div id="status" class="status" role="status" aria-live="polite">PDFを開くと、音符の読み取りを始めます。</div>
       <div class="pages" id="pages"><div class="empty-state"><span class="empty-score" aria-hidden="true">𝄞</span><h2>いつもの楽譜を、もっと読みやすく。</h2><p>PDFを選ぶと、五線・音部記号・調号・音符を自動判定。<br>判定できない場合はエラーになり、保存できません。</p><span class="empty-foot">インストール不要 · オフライン対応</span></div></div>
       <footer><span>固定ド / 音部記号・調号を自動判定</span><span>自動判定できないPDFは対象外</span></footer>
