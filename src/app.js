@@ -14,13 +14,14 @@ const fontBytes = decode(assets.font);
 const fontReady = new FontFace('ScoreJP', fontBytes).load().then(font => document.fonts.add(font));
 let state = {pdf:null,pages:[],settings:{size:7.5,color:'#b34536',octave:false,key:'auto',offset:6.5,scope:'all'}};
 let busy=false, blocked=true;
+let allowOverlap=false;
 const say=(text,error=false)=>{ $('status').textContent=text; $('status').classList.toggle('error',error); };
 const noteVisible=n=>!['treble','bass'].includes(state.settings.scope)||n.clef===state.settings.scope;
 const countNotes=()=>state.pages.reduce((n,p)=>n+p.notes.filter(noteVisible).length,0);
 function updateControls(){ $('export').disabled=busy||blocked||!state.pdf||!countNotes(); $('count').textContent=state.pdf?state.pages.length+'ページ · '+countNotes()+'音':'PDFを選んでスタート'; }
 async function run(task){if(busy)return;busy=true;document.body.classList.add('busy');updateControls();try{await task();}catch(e){console.error(e);say(e.message||'処理できませんでした。',true);}finally{busy=false;document.body.classList.remove('busy');updateControls();}}
 function syncSettings(){ $('font-size').value=state.settings.size;$('size-value').textContent=state.settings.size+' pt';$('scope').value=state.settings.scope;$('octave').checked=state.settings.octave;document.querySelectorAll('.swatch').forEach(e=>{e.classList.toggle('active',e.dataset.color===state.settings.color);e.setAttribute('aria-pressed',String(e.dataset.color===state.settings.color));}); }
-function arrange(){let errors=0;for(const p of state.pages)errors+=layoutLabels(p,state.settings,p.canvas);blocked=errors>0;say(blocked?'音名を重ならずに自動配置できませんでした。文字サイズを小さくしてください。':countNotes()+'音を自動判定しました。固定ドで表示しています。',blocked);renderAnnotations();}
+function arrange(){let errors=0;for(const p of state.pages)errors+=layoutLabels(p,state.settings,p.canvas);blocked=errors>0&&!allowOverlap;say(blocked?'音名を重ならずに自動配置できませんでした。文字サイズを小さくするか、「音名の重なりを許可する」をオンにしてください。':errors>0?'音名の重なりを許可しています。プレビューを確認して保存してください。':countNotes()+'音を自動判定しました。固定ドで表示しています。',blocked);renderAnnotations();}
 async function parsePDF(bytes, name) {
   if (bytes.length > 50 * 1024 * 1024) throw new Error('50MB以下のPDFを選んでください。');
   try { await PDFDocument.load(bytes); } catch(error) { throw new Error('PDFを読み込めません。破損したPDFや暗号化PDFは対象外です。'); }
@@ -108,6 +109,7 @@ async function fromFile(file) {
   if (!file) return;
   await openPDF(new Uint8Array(await file.arrayBuffer()), file.name);
 }
+$('allow-overlap').addEventListener('change',()=>{if(busy){$('allow-overlap').checked=allowOverlap;return;}allowOverlap=$('allow-overlap').checked;if(state.pdf)arrange();});
 $('export').addEventListener('click',()=>run(async()=>{
   const bytes=await createPDF();
   download(bytes,state.name.replace(/\.pdf$/i,'')+'_ドレミ付き.pdf','application/pdf');

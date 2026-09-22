@@ -197,7 +197,7 @@ export function layoutLabels(info, settings, canvas) {
           candidates.push({x,y,rect,cost:collisions*1e6+ink(rect)*100+Math.abs(dy)*.6+Math.abs(dx)});
         }
       }
-      if(!candidates.length) { note.layoutWarning=true; uncertain++; continue; }
+      if(!candidates.length) { note.x=Math.max(width/2+2,Math.min(info.width-width/2-2,anchor)); note.y=Math.max(size,Math.min(info.height-2,base)); note.layoutWarning=true; uncertain++; continue; }
       candidates.sort((a,b)=>a.cost-b.cost);const best=candidates[0];
       note.x=best.x;note.y=best.y;note.layoutWarning=best.cost>=100;
       if(note.layoutWarning) uncertain++;
