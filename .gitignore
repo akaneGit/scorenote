@@ -1,0 +1,15 @@
+node_modules/
+.tools/
+dist/
+release/
+sample/
+output/
+*.html
+!src/index.html
+*.pdf
+*.doremi.json
+tests/browser.mjs
+tests/menuet-browser.mjs
+tests/menuet-reference.ly
+tests/recognition.test.mjs
+tests/music.test.mjs
