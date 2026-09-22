@@ -1,8 +1,8 @@
 # ドレミふり / ScoreNote
 
-PDF楽譜の音符を読み取り、固定ド（C＝ド、♯・♭付き）を追加するローカルツールです。生成した「ScoreNote.html」をChromeまたはEdgeで開いて使います。
+PDF楽譜の音符を読み取り、固定ド（C＝ド、♯・♭付き）を追加するローカルツールです。ChromeまたはEdgeで使えます。
 
-[最新版のダウンロード](https://github.com/akaneGit/scorenote/releases/latest)から `ScoreNote.html` を保存し、ブラウザーで開いてください。
+[ドレミふりを開く](https://akanegit.github.io/scorenote/)だけで使えます。オフラインで使う場合は、[最新版のダウンロード](https://github.com/akaneGit/scorenote/releases/latest)から `ScoreNote.html` を保存して開いてください。
 
 1. 利用する権利・許諾、または適用される法定の例外があるPDFを選びます。
 2. 五線・音部記号・調号・音符を自動判定し、音名を配置します。
