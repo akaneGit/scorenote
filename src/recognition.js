@@ -145,10 +145,10 @@ export function detectScore(items, fonts, viewport, paths=[]) {
 
 export function chooseDefaults(detected) {
   const piano=detected.staves.some(s=>s.clef==='bass');
-  return {size:piano?6:7.5,offset:piano?2.5:6.5,color:'#b34536',octave:false,key:'auto',scope:'all',autoLayout:true};
+  return {size:piano?6:7.5,offset:piano?2.5:6.5,color:'#b34536',octave:false,key:'auto',scope:'all',chordLayout:'horizontal',autoLayout:true};
 }
 
-// Collision-free labels use a few rows in the free space after each staff.
+// Align note labels below each staff, keeping chords together.
 // Existing PDF ink is checked from the rendered canvas; uncertain placements are reported.
 export function layoutLabels(info, settings, canvas) {
   const scaleX=canvas.width/info.width,scaleY=canvas.height/info.height;
@@ -169,22 +169,31 @@ export function layoutLabels(info, settings, canvas) {
     const staffNotes=info.notes.filter(n=>n.staffId===staff.id).sort((a,b)=>a.noteX-b.noteX || b.pitch-a.pitch);
     // Keep labels in their own staff gap, including scores with two treble staves.
     const lower=staff.bottom+settings.size*.96+1;
-    const upper=end-settings.size*.16;
+    let upper=end-settings.size*.16;
     let base=Math.max(settings.size,Math.min(info.height-settings.size*.16-2,
       Math.max(lower,Math.min(upper,staff.bottom+staff.spacing*Math.min(settings.offset,2.5)))));
-    // Simultaneous chord tones are grouped horizontally, high pitch to low pitch.
-    const anchors=new Map();
+    // Keep chord tones together; vertical stacks read from high pitch to low pitch.
+    const anchors=new Map(), verticalOffsets=new Map();
+    let stackHeight=0;
     for(let i=0;i<staffNotes.length;){
       let j=i+1;while(j<staffNotes.length && Math.abs(staffNotes[j].noteX-staffNotes[i].noteX)<staff.spacing*.35) j++;
       const chord=staffNotes.slice(i,j).sort((a,b)=>b.pitch-a.pitch);
-      if(chord.length>1){
+      chord.forEach(n=>{n.chord=chord.length>1;});
+      if(chord.length>1 && settings.chordLayout==='vertical'){
+        const x=chord.reduce((sum,n)=>sum+n.noteX,0)/chord.length;
+        const step=settings.size*1.3;
+        chord.forEach((n,k)=>{anchors.set(n.id,x);verticalOffsets.set(n.id,k*step);});
+        stackHeight=Math.max(stackHeight,(chord.length-1)*step);
+      }else if(chord.length>1){
         const widths=chord.map(n=>{ctx.font=settings.size*scaleX+'px ScoreJP';return ctx.measureText(noteLabel(n,settings.key,settings.octave)).width/scaleX;});
         let x=chord.reduce((sum,n)=>sum+n.noteX,0)/chord.length-(widths.reduce((a,b)=>a+b,0)+(chord.length-1)*2.2)/2;
         chord.forEach((n,k)=>{anchors.set(n.id,x+widths[k]/2);x+=widths[k]+2.2;n.chord=true;});
       }
       i=j;
     }
-    if(settings.allowOverlap && upper>=lower){
+    upper-=stackHeight;
+    base=Math.max(settings.size,Math.min(info.height-stackHeight-settings.size*.16-2,Math.max(lower,Math.min(upper,base))));
+    if(upper>=lower){
       // Move the whole row together to avoid ledger notes and printed markings.
       const rows=[base];
       for(let y=lower;y<=upper;y+=1.8)rows.push(y);
@@ -195,7 +204,8 @@ export function layoutLabels(info, settings, canvas) {
         ctx.font=size*scaleX+'px ScoreJP';
         const width=ctx.measureText(noteLabel(n,settings.key,settings.octave)).width/scaleX;
         const x=Math.max(width/2+2,Math.min(info.width-width/2-2,anchors.get(n.id)??n.noteX));
-        return sum+ink({x0:x-width/2-.3,x1:x+width/2+.3,y0:y-size*.96,y1:y+size*.16})*100;
+        const baseline=y+(verticalOffsets.get(n.id)||0);
+        return sum+ink({x0:x-width/2-.3,x1:x+width/2+.3,y0:baseline-size*.96,y1:baseline+size*.16})*100;
       },Math.abs(y-preferred));
       base=rows.map(y=>({y,cost:rowCost(y)})).sort((a,b)=>a.cost-b.cost)[0].y;
     }
@@ -204,23 +214,13 @@ export function layoutLabels(info, settings, canvas) {
       const size=note.grace?settings.size*.85:settings.size,label=noteLabel(note,settings.key,settings.octave);
       ctx.font=size*scaleX+'px ScoreJP';
       const width=ctx.measureText(label).width/scaleX;
-      const candidates=[],anchor=anchors.get(note.id) ?? note.noteX;
-      const offsets=settings.allowOverlap?[0]:[0,-1.8,1.8,-3.6,3.6,-5.4,5.4,7.2,9,10.8,12.6,14.4,16.2,18,20,22,24,28,32,36,40];
-      for(const dy of offsets){
-        const y=base+dy;
-        if(y+1>end) continue;
-        for(const dx of (settings.allowOverlap?[0]:[0,-staff.spacing*.55,staff.spacing*.55,-staff.spacing,staff.spacing,-staff.spacing*1.5,staff.spacing*1.5])){
-          const x=Math.max(width/2+2,Math.min(info.width-width/2-2,anchor+dx)),rect={x0:x-width/2-.3,x1:x+width/2+.3,y0:y-size*.96,y1:y+size*.16};
-          if(rect.y0<staff.bottom+1) continue;
-          const collisions=placed.filter(p=>overlap(p,rect)).length;
-          candidates.push({x,y,rect,cost:collisions*1e6+ink(rect)*100+Math.abs(dy)*.6+Math.abs(dx)});
-        }
-      }
-      if(!candidates.length) { note.x=Math.max(width/2+2,Math.min(info.width-width/2-2,anchor)); note.y=Math.max(size,Math.min(info.height-2,base)); note.layoutWarning=true; uncertain++; continue; }
-      candidates.sort((a,b)=>a.cost-b.cost);const best=candidates[0];
-      note.x=best.x;note.y=best.y;note.layoutWarning=best.cost>=100;
-      if(note.layoutWarning) uncertain++;
-      placed.push(best.rect);
+      const anchor=anchors.get(note.id)??note.noteX;
+      note.x=Math.max(width/2+2,Math.min(info.width-width/2-2,anchor));
+      note.y=base+(verticalOffsets.get(note.id)||0);
+      const rect={x0:note.x-width/2-.3,x1:note.x+width/2+.3,y0:note.y-size*.96,y1:note.y+size*.16};
+      note.layoutWarning=ink(rect)>0||placed.some(p=>overlap(p,rect));
+      if(note.layoutWarning)uncertain++;
+      placed.push(rect);
     }
   }
   return uncertain;

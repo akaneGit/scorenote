@@ -12,16 +12,15 @@ const workerURL = URL.createObjectURL(new Blob([decode(assets.worker)], { type: 
 pdfjs.GlobalWorkerOptions.workerSrc = workerURL;
 const fontBytes = decode(assets.font);
 const fontReady = new FontFace('ScoreJP', fontBytes).load().then(font => document.fonts.add(font));
-let state = {pdf:null,pages:[],settings:{size:7.5,color:'#b34536',octave:false,key:'auto',offset:6.5,scope:'all'}};
+let state = {pdf:null,pages:[],settings:{size:7.5,color:'#b34536',octave:false,key:'auto',offset:6.5,scope:'all',chordLayout:'horizontal'}};
 let busy=false, blocked=true;
-let allowOverlap=false;
 const say=(text,error=false)=>{ $('status').textContent=text; $('status').classList.toggle('error',error); };
 const noteVisible=n=>!['treble','bass'].includes(state.settings.scope)||n.clef===state.settings.scope;
 const countNotes=()=>state.pages.reduce((n,p)=>n+p.notes.filter(noteVisible).length,0);
 function updateControls(){ $('export').disabled=busy||blocked||!state.pdf||!countNotes(); $('count').textContent=state.pdf?state.pages.length+'ページ · '+countNotes()+'音':'PDFを選んでスタート'; }
 async function run(task){if(busy)return;busy=true;document.body.classList.add('busy');updateControls();try{await task();}catch(e){console.error(e);say(e.message||'処理できませんでした。',true);}finally{busy=false;document.body.classList.remove('busy');updateControls();}}
-function syncSettings(){ $('font-size').value=state.settings.size;$('size-value').textContent=state.settings.size+' pt';$('scope').value=state.settings.scope;$('octave').checked=state.settings.octave;document.querySelectorAll('.swatch').forEach(e=>{e.classList.toggle('active',e.dataset.color===state.settings.color);e.setAttribute('aria-pressed',String(e.dataset.color===state.settings.color));}); }
-function arrange(){let errors=0;for(const p of state.pages)errors+=layoutLabels(p,{...state.settings,allowOverlap},p.canvas);blocked=errors>0&&!allowOverlap;say(blocked?'音名を重ならずに自動配置できませんでした。文字サイズを小さくするか、「音名の重なりを許可する」をオンにしてください。':errors>0?'音名の重なりを許可しています。プレビューを確認して保存してください。':countNotes()+'音を自動判定しました。固定ドで表示しています。',blocked);renderAnnotations();}
+function syncSettings(){ $('chord-layout').value=state.settings.chordLayout; $('font-size').value=state.settings.size;$('size-value').textContent=state.settings.size+' pt';$('scope').value=state.settings.scope;$('octave').checked=state.settings.octave;document.querySelectorAll('.swatch').forEach(e=>{e.classList.toggle('active',e.dataset.color===state.settings.color);e.setAttribute('aria-pressed',String(e.dataset.color===state.settings.color));}); }
+function arrange(){for(const p of state.pages)layoutLabels(p,state.settings,p.canvas);blocked=false;say(countNotes()+'音を自動判定しました。プレビューを確認して保存してください。');renderAnnotations();}
 async function parsePDF(bytes, name) {
   if (bytes.length > 50 * 1024 * 1024) throw new Error('50MB以下のPDFを選んでください。');
   try { await PDFDocument.load(bytes); } catch(error) { throw new Error('PDFを読み込めません。破損したPDFや暗号化PDFは対象外です。'); }
@@ -109,7 +108,6 @@ async function fromFile(file) {
   if (!file) return;
   await openPDF(new Uint8Array(await file.arrayBuffer()), file.name);
 }
-$('allow-overlap').addEventListener('change',()=>{if(busy){$('allow-overlap').checked=allowOverlap;return;}allowOverlap=$('allow-overlap').checked;if(state.pdf)arrange();});
 $('export').addEventListener('click',()=>run(async()=>{
   const bytes=await createPDF();
   download(bytes,state.name.replace(/\.pdf$/i,'')+'_ドレミ付き.pdf','application/pdf');
@@ -122,7 +120,7 @@ $('drop-zone').addEventListener('dragleave', () => $('drop-zone').classList.remo
 $('drop-zone').addEventListener('drop', event => { event.preventDefault(); $('drop-zone').classList.remove('dragover'); run(() => fromFile(event.dataTransfer.files[0])); });
 $('zoom').addEventListener('change',resizePages);
 new ResizeObserver(()=>{if(!busy)resizePages();}).observe($('pages'));
-for(const [id,key] of [['font-size','size'],['octave','octave'],['scope','scope']])$(id).addEventListener('input',()=>{if(busy)return;state.settings[key]=key==='size'?Number($(id).value):key==='octave'?$(id).checked:$(id).value;syncSettings();if(state.pdf)arrange();});
+for(const [id,key] of [['font-size','size'],['octave','octave'],['scope','scope'],['chord-layout','chordLayout']])$(id).addEventListener('input',()=>{if(busy)return;state.settings[key]=key==='size'?Number($(id).value):key==='octave'?$(id).checked:$(id).value;syncSettings();if(state.pdf)arrange();});
 document.querySelectorAll('.swatch').forEach(e=>e.addEventListener('click',()=>{if(busy)return;state.settings.color=e.dataset.color;syncSettings();renderAnnotations();}));
 window.doremi={ready:()=>!busy,createPDF,inspect:()=>({blocked,name:state.name,settings:{...state.settings},pages:state.pages.map(p=>({staves:structuredClone(p.staves),notes:p.notes.map(n=>({...n,label:noteLabel(n,'auto',state.settings.octave),pitchName:pitchName(n,'auto')}))}))})};
 syncSettings();updateControls();

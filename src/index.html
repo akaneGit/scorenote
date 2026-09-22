@@ -23,13 +23,13 @@
       <section>
         <div class="section-eyebrow">02 <span>ドレミを付ける</span></div>
         <p class="small-note">固定ドで表示します。C＝ド、D＝レ。</p>
-        <label class="field">音名を付ける段<select id="scope"><option value="all">すべての段</option><option value="treble">ト音記号の段だけ</option><option value="bass">ヘ音記号の段だけ</option></select></label><details><summary>自動読み取りについて</summary><p>五線・音部記号・音符・調号・臨時記号を自動判定します。和音の音名は高い音から横に並べます。装飾記号の演奏上の音は展開しません。スキャン画像や記号情報を持たないPDFは自動判定できません。</p></details>
+        <label class="field">音名を付ける段<select id="scope"><option value="all">すべての段</option><option value="treble">ト音記号の段だけ</option><option value="bass">ヘ音記号の段だけ</option></select></label><details><summary>自動読み取りについて</summary><p>五線・音部記号・音符・調号・臨時記号を自動判定します。和音の音名は横並び・縦並びを選べます。装飾記号の演奏上の音は展開しません。スキャン画像や記号情報を持たないPDFは自動判定できません。</p></details>
       </section>
       <section>
         <div class="section-eyebrow">03 <span>見た目を整える</span></div>
         <label class="field range-label">文字サイズ <output id="size-value">7.5 pt</output><input id="font-size" type="range" min="5" max="16" step="0.5" value="7.5"></label>
         <div class="field color-field"><span>文字の色</span><div class="swatches"><button class="swatch active" data-color="#b34536" style="--swatch:#b34536" aria-label="朱色" aria-pressed="true"></button><button class="swatch" data-color="#24587a" style="--swatch:#24587a" aria-label="青" aria-pressed="false"></button><button class="swatch" data-color="#1f2525" style="--swatch:#1f2525" aria-label="黒" aria-pressed="false"></button></div></div>
-        <label class="check"><input type="checkbox" id="allow-overlap">音名の重なりを許可する</label>
+        <label class="field">和音の並べ方<select id="chord-layout"><option value="horizontal">横並び</option><option value="vertical">縦並び（高い音が上）</option></select></label>
         <label class="check"><input type="checkbox" id="octave">オクターブ番号を添える <span>ド5</span></label>
       </section>
 
